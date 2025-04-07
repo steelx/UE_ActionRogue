@@ -39,17 +39,27 @@ AMyCharacter::AMyCharacter()
 // Called when the game starts or when spawned
 void AMyCharacter::BeginPlay()
 {
-	Super::BeginPlay();
-	checkf(InputContext, TEXT("IMC InputContext not found!"));
+    Super::BeginPlay();
+    checkf(InputContext, TEXT("IMC InputContext not found!"));
 
-	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
-	{
-		Subsystem->AddMappingContext(InputContext, 0);
-	}
+    // Get the player controller
+    if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+    {
+        // Get the local player from the player controller
+        if (ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer())
+        {
+            if (UEnhancedInputLocalPlayerSubsystem* Subsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+            {
+                Subsystem->AddMappingContext(InputContext, 0);
+            }
+        }
 
-	FInputModeGameAndUI InputModeData;
-	InputModeData.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-	InputModeData.SetHideCursorDuringCapture(false);
+        // Set input mode if needed
+        FInputModeGameAndUI InputModeData;
+        InputModeData.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+        InputModeData.SetHideCursorDuringCapture(false);
+        PlayerController->SetInputMode(InputModeData);
+    }
 }
 
 // Called every frame
@@ -66,11 +76,12 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 
 	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
 	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ThisClass::HandleMove);
+	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::HandleLook);
 }
 
 void AMyCharacter::HandleMove(const FInputActionValue& Value)
 {
-	FVector2d InputAxisVector = Value.Get<FVector2d>();
+	const FVector2d InputAxisVector = Value.Get<FVector2d>();
 	const FRotator Rotation = GetControlRotation();
 	const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
 
@@ -79,4 +90,17 @@ void AMyCharacter::HandleMove(const FInputActionValue& Value)
 
 	AddMovementInput(ForwardDirection, InputAxisVector.Y);
 	AddMovementInput(RightDirection, InputAxisVector.X);
+}
+
+void AMyCharacter::HandleLook(const FInputActionValue& Value)
+{
+	const FVector2d LookAxisVector = Value.Get<FVector2d>();
+    
+	if (Controller != nullptr)
+	{
+		// the Y-axis is typically inverted for mouse look
+		AddControllerYawInput(LookAxisVector.X);
+		AddControllerPitchInput(LookAxisVector.Y * -1.0f); // Invert Y-axis for more natural mouse control
+
+	}
 }
