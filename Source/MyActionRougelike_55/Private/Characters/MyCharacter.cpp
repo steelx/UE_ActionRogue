@@ -8,6 +8,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
+#include "MyMagicProjectile.h"
 //#include "Interface/HighlightInterface.h"
 
 // Sets default values
@@ -45,6 +46,7 @@ void AMyCharacter::BeginPlay()
     // Get the player controller
     if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
     {
+    	PlayerController->bShowMouseCursor = false;
         // Get the local player from the player controller
         if (ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer())
         {
@@ -77,6 +79,7 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
 	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ThisClass::HandleMove);
 	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::HandleLook);
+	EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &ThisClass::HandleFire);
 }
 
 void AMyCharacter::HandleMove(const FInputActionValue& Value)
@@ -96,11 +99,21 @@ void AMyCharacter::HandleLook(const FInputActionValue& Value)
 {
 	const FVector2d LookAxisVector = Value.Get<FVector2d>();
     
-	if (Controller != nullptr)
-	{
-		// the Y-axis is typically inverted for mouse look
-		AddControllerYawInput(LookAxisVector.X);
-		AddControllerPitchInput(LookAxisVector.Y * -1.0f); // Invert Y-axis for more natural mouse control
+	// the Y-axis is typically inverted for mouse look
+	AddControllerYawInput(LookAxisVector.X);
+	AddControllerPitchInput(LookAxisVector.Y * -1.0f); // Invert Y-axis for more natural mouse control
+}
 
+void AMyCharacter::HandleFire(const FInputActionValue& Value)
+{
+	if (!ProjectileClass)
+	{
+		return;
 	}
+
+	FTransform SpawnTransform = FTransform(GetControlRotation(), GetActorLocation());
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	GetWorld()->SpawnActor<AMyMagicProjectile>(ProjectileClass, SpawnTransform, SpawnParams);
 }
