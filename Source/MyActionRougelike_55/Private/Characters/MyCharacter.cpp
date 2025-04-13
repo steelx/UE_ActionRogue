@@ -111,7 +111,8 @@ void AMyCharacter::HandleFire(const FInputActionValue& Value)
 		return;
 	}
 
-	FTransform SpawnTransform = FTransform(GetControlRotation(), GetActorLocation());
+	const FVector SpawnLocation = GetMesh()->GetSocketLocation(FName("Muzzle_01"));
+	const FTransform SpawnTransform = FTransform(GetControlRotation(), SpawnLocation);
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 

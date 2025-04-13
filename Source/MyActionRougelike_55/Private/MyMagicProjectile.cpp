@@ -15,6 +15,16 @@ AMyMagicProjectile::AMyMagicProjectile()
 
 	SphereComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
 	SetRootComponent(SphereComp);
+	// Collisions
+	/*
+	 * Either use collision settings 
+	SphereComp->SetCollisionObjectType(ECC_WorldDynamic);
+	SphereComp->SetCollisionResponseToAllChannels(ECR_Ignore);
+	SphereComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+	 * Or use Custom profile
+	SphereComp->SetCollisionProfileName(TEXT("Projectile"));
+	 */
+	SphereComp->SetCollisionProfileName("Projectile");
 
 	EffectComp = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("EffectComp"));
 	EffectComp->SetupAttachment(SphereComp);
