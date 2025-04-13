@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "MyCharacter.generated.h"
 
+class UMyInteractionComponent;
 class UCameraComponent;
 class USpringArmComponent;
 class IHighlightInterface;
@@ -38,8 +39,11 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UCameraComponent* CameraComp;
 
-	UPROPERTY(EditAnywhere, Category = "Components")
+	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TSubclassOf<AActor> ProjectileClass;
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UMyInteractionComponent* InteractionComponent;
 
 private:
 	UPROPERTY(EditAnywhere, Category="Input")
@@ -54,8 +58,12 @@ private:
 	UPROPERTY(EditAnywhere, Category="Input")
 	TObjectPtr<UInputAction> FireAction;
 
+	UPROPERTY(EditAnywhere, Category="Input")
+	TObjectPtr<UInputAction> PrimaryInteractAction;
+
 	void HandleMove(const FInputActionValue& Value);
 	void HandleLook(const FInputActionValue& Value);
 	void HandleFire(const FInputActionValue& Value);
+	void HandlePrimaryInteract(const FInputActionValue& Value);
 
 };

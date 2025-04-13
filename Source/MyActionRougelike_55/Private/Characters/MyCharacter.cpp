@@ -8,6 +8,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
+#include "MyInteractionComponent.h"
 #include "MyMagicProjectile.h"
 //#include "Interface/HighlightInterface.h"
 
@@ -35,6 +36,7 @@ AMyCharacter::AMyCharacter()
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 400.f, 0.f);
 
+	InteractionComponent = CreateDefaultSubobject<UMyInteractionComponent>(TEXT("InteractionComponent"));
 }
 
 // Called when the game starts or when spawned
@@ -80,6 +82,7 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ThisClass::HandleMove);
 	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::HandleLook);
 	EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &ThisClass::HandleFire);
+	EnhancedInputComponent->BindAction(PrimaryInteractAction, ETriggerEvent::Started, this, &ThisClass::HandlePrimaryInteract);
 }
 
 void AMyCharacter::HandleMove(const FInputActionValue& Value)
@@ -117,4 +120,9 @@ void AMyCharacter::HandleFire(const FInputActionValue& Value)
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	GetWorld()->SpawnActor<AMyMagicProjectile>(ProjectileClass, SpawnTransform, SpawnParams);
+}
+
+void AMyCharacter::HandlePrimaryInteract(const FInputActionValue& Value)
+{
+	InteractionComponent->PrimaryInteract();
 }
