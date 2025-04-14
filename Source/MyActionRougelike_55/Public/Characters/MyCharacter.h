@@ -29,6 +29,10 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	inline bool GetIsPlayerAttacking() const { return bIsAttacking; }
+	inline bool GetIsPlayerInteracting() const { return bIsInteracting; }
+	void SetIsPlayerAttacking(bool bIsAttacking);
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -44,6 +48,15 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UMyInteractionComponent* InteractionComponent;
+
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category="Animations")
+	bool bIsInteracting;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category="Animations")
+	bool bIsAttacking;
+
+	FTimerHandle TimerHandle_PlayAttackAnim;
 
 private:
 	UPROPERTY(EditAnywhere, Category="Input")
@@ -64,6 +77,7 @@ private:
 	void HandleMove(const FInputActionValue& Value);
 	void HandleLook(const FInputActionValue& Value);
 	void HandleFire(const FInputActionValue& Value);
+	void SpawnProjectile();
 	void HandlePrimaryInteract(const FInputActionValue& Value);
 
 };

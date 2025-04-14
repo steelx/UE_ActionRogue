@@ -39,6 +39,11 @@ AMyCharacter::AMyCharacter()
 	InteractionComponent = CreateDefaultSubobject<UMyInteractionComponent>(TEXT("InteractionComponent"));
 }
 
+void AMyCharacter::SetIsPlayerAttacking(bool bAttacking)
+{
+	bIsAttacking = bAttacking;
+}
+
 // Called when the game starts or when spawned
 void AMyCharacter::BeginPlay()
 {
@@ -87,6 +92,10 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 
 void AMyCharacter::HandleMove(const FInputActionValue& Value)
 {
+	if (bIsAttacking)
+	{
+		return;
+	}
 	const FVector2d InputAxisVector = Value.Get<FVector2d>();
 	const FRotator Rotation = GetControlRotation();
 	const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
@@ -108,6 +117,18 @@ void AMyCharacter::HandleLook(const FInputActionValue& Value)
 }
 
 void AMyCharacter::HandleFire(const FInputActionValue& Value)
+{
+	if (!ProjectileClass)
+	{
+		return;
+	}
+
+	SetIsPlayerAttacking(true);
+	GetWorldTimerManager().SetTimer(TimerHandle_PlayAttackAnim, this, &ThisClass::SpawnProjectile, 0.2, false);
+	// GetWorldTimerManager().ClearTimer(TimerHandle_PlayAttackAnim);
+}
+
+void AMyCharacter::SpawnProjectile()
 {
 	if (!ProjectileClass)
 	{
