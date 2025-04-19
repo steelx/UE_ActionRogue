@@ -14,7 +14,9 @@ class UHighlightInterface : public UInterface
 };
 
 /**
- * 
+* For any actor that should get highlighted, you need to:
+1. Make it implement the `HighlightInterface`
+2. Implement the `HighlightActor` function to apply the outline material
  */
 class MYACTIONROUGELIKE_55_API IHighlightInterface
 {
@@ -22,4 +24,7 @@ class MYACTIONROUGELIKE_55_API IHighlightInterface
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
+	UFUNCTION(BlueprintNativeEvent)
+	void HighlightActor(bool bShouldHighlight);
+
 };

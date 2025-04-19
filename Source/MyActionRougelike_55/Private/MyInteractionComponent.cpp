@@ -3,6 +3,7 @@
 
 #include "MyInteractionComponent.h"
 
+#include "Interface/HighlightInterface.h"
 #include "Interface/MyGameplayInterface.h"
 
 // Sets default values for this component's properties
@@ -12,7 +13,7 @@ UMyInteractionComponent::UMyInteractionComponent()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
-	// ...
+	FocusedActor = nullptr;
 }
 
 
@@ -20,8 +21,6 @@ UMyInteractionComponent::UMyInteractionComponent()
 void UMyInteractionComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// ...
 	
 }
 
@@ -31,10 +30,16 @@ void UMyInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// ...
+	// Look for objects to highlight each frame
+	FindInteractable();
 }
 
-void UMyInteractionComponent::PrimaryInteract()
+bool UMyInteractionComponent::IsInteractable(AActor* Actor)
+{
+	return Actor && (Actor->Implements<UMyGameplayInterface>());
+}
+
+void UMyInteractionComponent::FindInteractable()
 {
 	FCollisionObjectQueryParams ObjectQueryParams;
 	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
@@ -43,23 +48,82 @@ void UMyInteractionComponent::PrimaryInteract()
 	FVector EyeLocation;
 	FRotator EyeRotation;
 	MyOwner->GetActorEyesViewPoint(EyeLocation, EyeRotation);
-	const FVector End = EyeLocation + EyeRotation.Vector() * 1000.f;
+	const FVector End = EyeLocation + EyeRotation.Vector() * TraceDistance;
 
 	FHitResult Hit;
 	GetWorld()->LineTraceSingleByObjectType(Hit, EyeLocation, End, ObjectQueryParams);
 
-	if (AActor* HitActor = Hit.GetActor())
+	// If we're no longer looking at the same actor, unhighlight the old one
+	if (AActor* HitActor = Hit.GetActor(); FocusedActor != HitActor)
 	{
-		// if (HitActor->Implements<UMyGameplayInterface>())
-		// {
-		// 	APawn* InstigatorPawn = Cast<APawn>(MyOwner);
-		// 	IMyGameplayInterface::Execute_Interact(HitActor, InstigatorPawn);
-		// }
-		if (IMyGameplayInterface* GameplayInterface = Cast<IMyGameplayInterface>(HitActor))
+		// Clear highlight on a previously focused actor
+		if (FocusedActor && FocusedActor->Implements<UHighlightInterface>())
 		{
-			APawn* InstigatorPawn = Cast<APawn>(MyOwner);
-			GameplayInterface->Execute_Interact(HitActor, InstigatorPawn);
+			ApplyHighlight(FocusedActor, false);
 		}
+        
+		// Set new focused actor
+		FocusedActor = IsInteractable(HitActor) ? HitActor : nullptr;
+        
+		// Apply highlight to new focused actor
+		if (FocusedActor && FocusedActor->Implements<UHighlightInterface>())
+		{
+			ApplyHighlight(FocusedActor, true);
+		}
+	}
+    
+	// Optional: Draw debug line to show where we're looking
+	// DrawDebugLine(GetWorld(), EyeLocation, End, FColor::Red, false, 0.0f, 0, 2.0f);
+}
+
+void UMyInteractionComponent::ApplyHighlight(AActor* Actor, bool bShouldHighlight)
+{
+	if (!Actor || !HighlightMaterial)
+	{
+		return;
+	}
+
+	// Find all static mesh components on the actor
+	TArray<UStaticMeshComponent*> MeshComponents;
+	Actor->GetComponents<UStaticMeshComponent>(MeshComponents);
+
+	if (MeshComponents.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No StaticMeshComponents found on %s"), *Actor->GetName());
+		return;
+	}
+    
+	for (UStaticMeshComponent* MeshComp : MeshComponents)
+	{
+		// Apply or remove the overlay material
+		if (bShouldHighlight)
+		{
+			if (UMaterialInterface* OriginalMat = MeshComp->GetMaterial(0))
+			{
+				OriginalMaterials.Add(MeshComp, OriginalMat);
+                    
+				// Apply highlight material to all material slots
+				MeshComp->SetMaterial(0, HighlightMaterial);
+			}
+		}
+		else
+		{
+			// Restore original materials
+			if (UMaterialInterface* OriginalMat = OriginalMaterials.FindRef(MeshComp))
+			{
+				MeshComp->SetMaterial(0, OriginalMat);
+				OriginalMaterials.Remove(MeshComp);
+			}
+		}
+	}
+}
+
+void UMyInteractionComponent::PrimaryInteract()
+{
+	if (FocusedActor && FocusedActor->Implements<UMyGameplayInterface>())
+	{
+		APawn* InstigatorPawn = Cast<APawn>(GetOwner());
+		IMyGameplayInterface::Execute_Interact(FocusedActor, InstigatorPawn);
 	}
 }
 

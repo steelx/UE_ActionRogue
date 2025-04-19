@@ -4,11 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Interface/HighlightInterface.h"
 #include "Interface/MyGameplayInterface.h"
 #include "MyItemChest.generated.h"
 
 UCLASS()
-class MYACTIONROUGELIKE_55_API AMyItemChest : public AActor, public IMyGameplayInterface
+class MYACTIONROUGELIKE_55_API AMyItemChest : public AActor, public IMyGameplayInterface, public IHighlightInterface
 {
 	GENERATED_BODY()
 	
