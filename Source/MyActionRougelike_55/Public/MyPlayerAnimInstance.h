@@ -43,4 +43,14 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AnimData")
 	float CurrentRotation;
+
+	UPROPERTY(BlueprintReadOnly, Category="AnimData|Jump State")
+	bool bJumpStart = false;
+	UPROPERTY(BlueprintReadOnly, Category="AnimData|Jump State")
+	bool bJumping = false;
+	UPROPERTY(BlueprintReadOnly, Category="AnimData|Jump State")
+	bool bJumpFalling = false;
+	UPROPERTY(BlueprintReadOnly, Category="AnimData|Jump State")
+	bool bJumpEnded = false;
+
 };

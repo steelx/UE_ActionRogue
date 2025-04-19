@@ -32,6 +32,11 @@ public:
 	inline bool GetIsPlayerAttacking() const { return bIsAttacking; }
 	inline bool GetIsPlayerInteracting() const { return bIsInteracting; }
 	void SetIsPlayerAttacking(bool bIsAttacking);
+	void Jump();
+
+	void Landed(const FHitResult& Hit);
+	UFUNCTION(BlueprintPure)
+	void GetJumpState(bool& bOutJumpStart, bool& bOutJumping, bool& bOutJumpFalling, bool& bOutJumpEnded) const;
 
 protected:
 	// Called when the game starts or when spawned
@@ -48,7 +53,6 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UMyInteractionComponent* InteractionComponent;
-
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category="Animations")
 	bool bIsInteracting;
@@ -59,12 +63,20 @@ protected:
 	FTimerHandle TimerHandle_PlayAttackAnim;
 
 private:
+	bool bJumpStart = false;
+	bool bJumping = false;
+	bool bJumpFalling = false;
+	bool bJumpEnded = false;
+
 	UPROPERTY(EditAnywhere, Category="Input")
 	TObjectPtr<UInputMappingContext> InputContext;
 
 	UPROPERTY(EditAnywhere, Category="Input")
 	TObjectPtr<UInputAction> MoveAction;
 
+	UPROPERTY(EditAnywhere, Category="Input")
+	TObjectPtr<UInputAction> JumpAction;
+	
 	UPROPERTY(EditAnywhere, Category="Input")
 	TObjectPtr<UInputAction> LookAction;
 

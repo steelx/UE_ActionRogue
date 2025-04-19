@@ -39,11 +39,6 @@ AMyCharacter::AMyCharacter()
 	InteractionComponent = CreateDefaultSubobject<UMyInteractionComponent>(TEXT("InteractionComponent"));
 }
 
-void AMyCharacter::SetIsPlayerAttacking(bool bAttacking)
-{
-	bIsAttacking = bAttacking;
-}
-
 // Called when the game starts or when spawned
 void AMyCharacter::BeginPlay()
 {
@@ -76,6 +71,13 @@ void AMyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (GetCharacterMovement()->IsFalling())
+	{
+		bJumpStart = false;
+		bJumping = true;
+		bJumpFalling = GetVelocity().Z < 0.f;
+		bJumpEnded = false;
+	}
 }
 
 // Called to bind functionality to input
@@ -88,11 +90,12 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::HandleLook);
 	EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &ThisClass::HandleFire);
 	EnhancedInputComponent->BindAction(PrimaryInteractAction, ETriggerEvent::Started, this, &ThisClass::HandlePrimaryInteract);
+	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ThisClass::Jump);
 }
 
 void AMyCharacter::HandleMove(const FInputActionValue& Value)
 {
-	if (bIsAttacking)
+	if (bIsAttacking || bJumpFalling)
 	{
 		return;
 	}
@@ -146,4 +149,43 @@ void AMyCharacter::SpawnProjectile()
 void AMyCharacter::HandlePrimaryInteract(const FInputActionValue& Value)
 {
 	InteractionComponent->PrimaryInteract();
+}
+
+
+void AMyCharacter::SetIsPlayerAttacking(bool bAttacking)
+{
+	bIsAttacking = bAttacking;
+}
+
+void AMyCharacter::Jump()
+{
+	Super::Jump();
+	bJumpStart = true;
+	bJumping = true;
+	bJumpFalling = false;
+	bJumpEnded = false;
+}
+/*
+- **Landed** is a **virtual function** in the `ACharacter` class (from Unreal Engine's C++ API).
+- The engine automatically calls `Landed()` whenever your character hits the ground after falling or jumping.
+ */
+void AMyCharacter::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+	bJumpStart = false;
+	bJumping = false;
+	bJumpFalling = false;
+	// bJumpEnded = true;
+	// OR: Reset after a short delay
+	GetWorldTimerManager().SetTimerForNextTick([this](){bJumpEnded = true;});
+	// Or use a specific delay if needed
+	// GetWorldTimerManager().SetTimer(LandingDelayHandle, this, &AMyCharacter::ClearJumpEnded, 0.2f, false);
+}
+
+void AMyCharacter::GetJumpState(bool& bOutJumpStart, bool& bOutJumping, bool& bOutJumpFalling, bool&bOutJumpEnded) const
+{
+	bOutJumpStart = bJumpStart;
+	bOutJumping = bJumping;
+	bOutJumpFalling = bJumpFalling;
+	bOutJumpEnded = bJumpEnded;
 }

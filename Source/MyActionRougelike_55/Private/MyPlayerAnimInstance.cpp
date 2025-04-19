@@ -48,4 +48,13 @@ void UMyPlayerAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	CurrentVelocity = OwningPlayerCharacter->GetVelocity().Size();
 	// Get Right vector
 	CurrentRotation = UKismetMathLibrary::GetRightVector(OwningPlayerCharacter->GetControlRotation()).Size();
+
+	// Get jump state from character
+	bool bTmpJumpStart, bTmpJumping, bTmpJumpFalling, bTmpJumpEnded;
+	OwningPlayerCharacter->GetJumpState(bTmpJumpStart, bTmpJumping, bTmpJumpFalling, bTmpJumpEnded);
+
+	bJumpStart     = bTmpJumpStart;
+	bJumping       = bTmpJumping;
+	bJumpFalling   = bTmpJumpFalling;
+	bJumpEnded = bTmpJumpEnded;
 }
