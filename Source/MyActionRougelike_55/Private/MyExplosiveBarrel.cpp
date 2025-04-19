@@ -39,6 +39,11 @@ void AMyExplosiveBarrel::BeginPlay()
 
 void AMyExplosiveBarrel::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
+	Explode();
+}
+
+void AMyExplosiveBarrel::Explode()
+{
 	// Apply upward impulse to the barrel
 	MeshComp->AddImpulse(FVector(0, 0, ExplosionImpulse), NAME_None, true);
 

@@ -17,6 +17,7 @@ class MYACTIONROUGELIKE_55_API AMyExplosiveBarrel : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AMyExplosiveBarrel();
+	void Explode();
 
 protected:
 	// Called when the game starts or when spawned
