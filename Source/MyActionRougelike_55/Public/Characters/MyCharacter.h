@@ -32,8 +32,8 @@ public:
 	inline bool GetIsPlayerAttacking() const { return bIsAttacking; }
 	inline bool GetIsPlayerInteracting() const { return bIsInteracting; }
 	void SetIsPlayerAttacking(bool bIsAttacking);
+	
 	void Jump();
-
 	void Landed(const FHitResult& Hit);
 	UFUNCTION(BlueprintPure)
 	void GetJumpState(bool& bOutJumpStart, bool& bOutJumping, bool& bOutJumpFalling, bool& bOutJumpEnded) const;

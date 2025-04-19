@@ -91,11 +91,12 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &ThisClass::HandleFire);
 	EnhancedInputComponent->BindAction(PrimaryInteractAction, ETriggerEvent::Started, this, &ThisClass::HandlePrimaryInteract);
 	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ThisClass::Jump);
+	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 }
 
 void AMyCharacter::HandleMove(const FInputActionValue& Value)
 {
-	if (bIsAttacking || bJumpFalling)
+	if (bIsAttacking || GetCharacterMovement()->IsFalling())
 	{
 		return;
 	}
@@ -161,9 +162,7 @@ void AMyCharacter::Jump()
 {
 	Super::Jump();
 	bJumpStart = true;
-	bJumping = true;
-	bJumpFalling = false;
-	bJumpEnded = false;
+
 }
 /*
 - **Landed** is a **virtual function** in the `ACharacter` class (from Unreal Engine's C++ API).
