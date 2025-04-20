@@ -63,6 +63,7 @@ protected:
 	FTimerHandle TimerHandle_PlayAttackAnim;
 
 private:
+	const float TraceDistance = 1000.0f; // Max trace distance
 	bool bJumpStart = false;
 	bool bJumping = false;
 	bool bJumpFalling = false;

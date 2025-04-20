@@ -10,6 +10,7 @@
 #include "EnhancedInputComponent.h"
 #include "MyInteractionComponent.h"
 #include "MyMagicProjectile.h"
+#include "Components/ArrowComponent.h"
 //#include "Interface/HighlightInterface.h"
 
 // Sets default values
@@ -132,20 +133,62 @@ void AMyCharacter::HandleFire(const FInputActionValue& Value)
 	// GetWorldTimerManager().ClearTimer(TimerHandle_PlayAttackAnim);
 }
 
+/*
+* Problem:
+Projectile is spawned at Muzzle_01 player hand which can be left or right based on orientation
+Camera Perspective; aiming at something close will miss the target due to camera alignment with character.
+* Solution:
+Line trace from Camera to World and find the desired impact location.
+ */
 void AMyCharacter::SpawnProjectile()
 {
-	if (!ProjectileClass)
+	if (!ProjectileClass || !GetWorld() || !CameraComp)
 	{
 		return;
 	}
 
+	// 1. Get camera location and forward vector
+	const FVector CameraLocation = CameraComp->GetComponentLocation();
+	const FRotator CameraRotation = CameraComp->GetComponentRotation(); // Or use GetControlRotation() if SpringArm uses PawnControlRotation
+	const FVector TraceDirection = CameraRotation.Vector();
+	const FVector TraceStart = CameraLocation;
+	const FVector TraceEnd = TraceStart + (TraceDirection * TraceDistance);
+
+	// 2. Perform Line Trace
+	FHitResult HitResult;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this); // Ignore the character itself
+	QueryParams.bTraceComplex = true;
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(
+		HitResult,
+		TraceStart,
+		TraceEnd,
+		ECC_Visibility, // Or your preferred collision channel for aiming
+		QueryParams
+	);
+
+	// 3. Determine Target Location
+	const FVector TargetLocation = bHit ? HitResult.ImpactPoint : TraceEnd;
+
+	// Optional: Draw debug line to visualize the trace
+	// DrawDebugLine(GetWorld(), TraceStart, TargetLocation, FColor::Green, false, 2.0f, 0, 1.0f);
+
+	// 4. Calculate spawn location and the direction towards the target
 	const FVector SpawnLocation = GetMesh()->GetSocketLocation(FName("Muzzle_01"));
-	const FTransform SpawnTransform = FTransform(GetControlRotation(), SpawnLocation);
+	const FVector DirectionToTarget = (TargetLocation - SpawnLocation).GetSafeNormal();
+	const FRotator SpawnRotation = DirectionToTarget.Rotation();
+
+	// 5. Spawn Projectile
+	const FTransform SpawnTransform = FTransform(SpawnRotation, SpawnLocation);
 	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = GetInstigator(); // Set the instigator if needed
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn; // Or AdjustIfPossibleButAlwaysSpawn
 
 	GetWorld()->SpawnActor<AMyMagicProjectile>(ProjectileClass, SpawnTransform, SpawnParams);
 }
+
 
 void AMyCharacter::HandlePrimaryInteract(const FInputActionValue& Value)
 {

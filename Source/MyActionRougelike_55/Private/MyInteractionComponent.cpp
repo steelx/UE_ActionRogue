@@ -3,6 +3,8 @@
 
 #include "MyInteractionComponent.h"
 
+#include "Camera/CameraComponent.h"
+#include "GameFramework/Character.h"
 #include "Interface/HighlightInterface.h"
 #include "Interface/MyGameplayInterface.h"
 
@@ -39,41 +41,88 @@ bool UMyInteractionComponent::IsInteractable(AActor* Actor)
 	return Actor && (Actor->Implements<UMyGameplayInterface>());
 }
 
+/**
+ * Performs a line trace from the player's camera (or eye position) to find interactable objects
+ * and highlights them when targeted.
+ *
+ * A line trace is performed from the camera component (preferred) or actor eye position,
+ * checking for objects implementing UMyGameplayInterface.
+ * When a new interactable object is found, the previous highlight is removed and the new
+ * object is highlighted via the ApplyHighlight() function.
+ *
+ * @note Relies on UCameraComponent for most accurate targeting. Falls back to actor eye position if no camera found.
+ * @note Objects must implement UMyGameplayInterface to be interactable and UHighlightInterface to be highlighted.
+ */
 void UMyInteractionComponent::FindInteractable()
 {
-	FCollisionObjectQueryParams ObjectQueryParams;
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
-
 	AActor* MyOwner = GetOwner();
-	FVector EyeLocation;
-	FRotator EyeRotation;
-	MyOwner->GetActorEyesViewPoint(EyeLocation, EyeRotation);
-	const FVector End = EyeLocation + EyeRotation.Vector() * TraceDistance;
+	if (!MyOwner || !GetWorld())
+	{
+		return;
+	}
+
+	FVector TraceStart;
+	FVector TraceDirection;
+
+	// Try to get the camera component from the owning character
+	const ACharacter* MyCharacter = Cast<ACharacter>(MyOwner);
+
+	if (const UCameraComponent* CameraComp = MyCharacter ? MyCharacter->FindComponentByClass<UCameraComponent>() : nullptr)
+	{
+		// Use Camera location and rotation for the trace
+		TraceStart = CameraComp->GetComponentLocation();
+		TraceDirection = CameraComp->GetComponentRotation().Vector();
+	}
+	else
+	{
+		// Fallback: Use owner's eye view point if camera is not found (less accurate for 3rd person)
+		FRotator EyeRotation;
+		MyOwner->GetActorEyesViewPoint(TraceStart, EyeRotation);
+		TraceDirection = EyeRotation.Vector();
+		UE_LOG(LogTemp, Warning, TEXT("Interaction trace falling back to GetActorEyesViewPoint. Ensure Owning Actor is AMyCharacter with a UCameraComponent for best results."));
+	}
+
+	const FVector TraceEnd = TraceStart + (TraceDirection * TraceDistance);
+
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic); // Make sure this channel includes interactable objects
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(MyOwner); // Ignore the owner
+	QueryParams.bTraceComplex = true; // Or false depending on needs
 
 	FHitResult Hit;
-	GetWorld()->LineTraceSingleByObjectType(Hit, EyeLocation, End, ObjectQueryParams);
+	bool bHit = GetWorld()->LineTraceSingleByObjectType(
+		Hit,
+		TraceStart,
+		TraceEnd,
+		ObjectQueryParams,
+		QueryParams
+	);
 
-	// If we're no longer looking at the same actor, unhighlight the old one
-	if (AActor* HitActor = Hit.GetActor(); FocusedActor != HitActor)
+	AActor* HitActor = Hit.GetActor();
+
+	// If we're no longer looking at the same interactable actor, update highlight
+	if (FocusedActor != HitActor)
 	{
-		// Clear highlight on a previously focused actor
+		// Clear highlight on the previously focused actor (if it was interactable)
 		if (FocusedActor && FocusedActor->Implements<UHighlightInterface>())
 		{
 			ApplyHighlight(FocusedActor, false);
 		}
-        
-		// Set new focused actor
+
+		// Set new focused actor only if it's interactable
 		FocusedActor = IsInteractable(HitActor) ? HitActor : nullptr;
-        
-		// Apply highlight to new focused actor
+
+		// Apply highlight to the new focused actor (if it's valid and interactable)
 		if (FocusedActor && FocusedActor->Implements<UHighlightInterface>())
 		{
 			ApplyHighlight(FocusedActor, true);
 		}
 	}
-    
+
 	// Optional: Draw debug line to show where we're looking
-	// DrawDebugLine(GetWorld(), EyeLocation, End, FColor::Red, false, 0.0f, 0, 2.0f);
+	// DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FocusedActor ? FColor::Cyan : FColor::Red, false, 0.0f, 0, 1.0f);
 }
 
 void UMyInteractionComponent::ApplyHighlight(AActor* Actor, bool bShouldHighlight)
