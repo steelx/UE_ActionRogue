@@ -39,21 +39,30 @@ void AMyExplosiveBarrel::BeginPlay()
 
 void AMyExplosiveBarrel::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
+	UE_LOG(LogTemp, Warning, TEXT("Hit with Actor: %s"), *OtherActor->GetName());
+	if (OtherComp)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Hit Component: %s"), *OtherComp->GetName());
+	}
 	Explode();
 }
 
 void AMyExplosiveBarrel::Explode()
 {
-	// Apply upward impulse to the barrel
-	MeshComp->AddImpulse(FVector(0, 0, ExplosionImpulse), NAME_None, true);
-
-	// Fire radial force
-	RadialForceComp->FireImpulse();
-
 	// Spawn explosion effect at the bottom of the barrel
 	if (BoomFX)
 	{
-		const FVector ExplosionLocation = GetActorLocation() - FVector(0, 0, MeshComp->Bounds.BoxExtent.Z-50.f);
+		const FVector ExplosionLocation = GetActorLocation() - FVector(0, 0, MeshComp->Bounds.BoxExtent.Z-70.f);
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BoomFX, ExplosionLocation);
 	}
+
+	// Create a timer to apply explosion effects after delay
+	GetWorldTimerManager().SetTimer(ExplodeDelayHandle, [this]()
+	{
+		// Apply upward impulse to the barrel
+		MeshComp->AddImpulse(FVector(0, 0, ExplosionImpulse), NAME_None, true);
+
+		// Fire radial force  
+		RadialForceComp->FireImpulse();
+	}, 1.2f, false);
 }

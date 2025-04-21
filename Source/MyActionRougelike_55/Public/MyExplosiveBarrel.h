@@ -54,4 +54,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Physics")
 	float ExplosionStrength;
 
+private:
+	FTimerHandle ExplodeDelayHandle;
 };
