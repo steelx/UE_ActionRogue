@@ -150,9 +150,8 @@ void UMyInteractionComponent::ApplyHighlight(AActor* Actor, bool bShouldHighligh
 			if (UMaterialInterface* OriginalMat = MeshComp->GetMaterial(0))
 			{
 				OriginalMaterials.Add(MeshComp, OriginalMat);
-                    
-				// Apply highlight material to all material slots
 				MeshComp->SetMaterial(0, HighlightMaterial);
+				// MeshComp->SetOverlayMaterial(HighlightMaterial);
 			}
 		}
 		else
@@ -162,6 +161,7 @@ void UMyInteractionComponent::ApplyHighlight(AActor* Actor, bool bShouldHighligh
 			{
 				MeshComp->SetMaterial(0, OriginalMat);
 				OriginalMaterials.Remove(MeshComp);
+				// MeshComp->SetOverlayMaterial(nullptr);
 			}
 		}
 	}
